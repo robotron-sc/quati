@@ -28,15 +28,15 @@ def generator():
         if image is None:
             continue 
 
-        label, green = follower.track(image)
+        label= follower.track(image)
 
         image.draw_label(label, **STYLE)
 
         raw_capture.truncate(0)
         
-        display = img.Data(img.vboard(image.frame, green.frame))
+        # display = img.Data(img.vboard(image.frame, green.frame))
         # print(green.shape, image.shape)
-        byteframe = bytes(display)
+        byteframe = bytes(image)
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + byteframe + b'\r\n\r\n')
 

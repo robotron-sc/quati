@@ -22,6 +22,7 @@ camera = PiCamera()
 camera.resolution = (640, 480)
 camera.framerate = 60 
 
+
 raw_capture = PiRGBArray(camera, size=(640, 480))
 register = img.video_write(f'registers/{DATETIME}.avi', camera.resolution, framerate=10)
 
