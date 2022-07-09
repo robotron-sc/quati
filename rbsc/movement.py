@@ -4,15 +4,15 @@ import RPi.GPIO as io
 
 class ServoTank:
     dir_strs = {
-        'back':   (1,  1),
-        'fwd':   (-1, -1),
-        'right':   (1, 0),
-        'left':   (0, 1),
+        'back':   (-1, -1),
+        'fwd':   (1, 1),
+        'right':   (1, -1),
+        'left':   (-1, 1),
         'stop':   (0,  0)
     }
 
     def __init__(self, left_pin, right_pin, freq=50, initial_value=0):
-        io.setmode(io.BCM)
+        io.setmode(io.BOARD)
         io.setup(left_pin, io.OUT)
         io.setup(right_pin, io.OUT)
         self.l = io.PWM(left_pin, freq)
@@ -52,7 +52,7 @@ class Coord:
 
 class CoordMove:
     def __init__(self, pins, coords, freq=50):
-        io.setmode(io.BCM)
+        io.setmode(io.BOARD)
         if isinstance(pins, Number):
             pins = tuple([pins])
         self.servos_ = []
