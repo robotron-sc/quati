@@ -66,12 +66,12 @@ def track(image):
     if li < LO:
         if ll < LO and rl > HI:
             strd = '<-90'
-            mv.fwd(SPEED, .3)
+            mv.fwd(SPEED, 1)
             after = lambda : mv.back(SPEED)
             scope = lambda fr : Macros.findLine(fr, .9*SPEED, 'left', after)
         elif rl < LO and ll > HI:
             strd = '90->'
-            mv.fwd(SPEED, .3)
+            mv.fwd(SPEED, 1)
             after = lambda : mv.back(SPEED)
             scope = lambda fr : Macros.findLine(fr, .9*SPEED, 'right', after)
         else:

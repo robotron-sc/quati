@@ -7,8 +7,12 @@ STYLE = {
     'scale':.5,
     'thickness':2
 }
+LO = 10 
+HI = 80 
+SPEED = .5
+FAIL_CNT = 5
 
-def __call__(resolution, *motors):
+def setup(resolution, *motors):
     global x, y, w, h
     w, h = resolution
     x, y = (ii // 2 for ii in resolution)
@@ -17,55 +21,75 @@ def __call__(resolution, *motors):
     geo = {
         'central': ((x, h - 100), (80, 80)),
         'wider_central': ((x, h - 100), (90, 110)),
-        'llateral' : ((w // 2 - 140, h - 100), (130, 100)),
-        'rlateral' : ((w // 2 + 140, h - 100), (130, 100)),
+        'llateral' : ((w // 2 - 100, h - 70), (80, 140)),
+        'rlateral' : ((w // 2 + 100, h - 70), (80, 140)),
         'close' : ((x, h - 50), (w, 100))
     }
 
-    global mv
+    global mv, kill
     mv = ServoTank(*motors)
     kill = mv.kill
 
+failsafe = FAIL_CNT
 def track(frame):
+    global failsafe
     sto = ''
-    line = central.filter([0]*3, [255, 10, 20])
+    macro = None
 
-    central = line(*geo['central'])
+    central = frame(*geo['central'])
     ml = central.light 
-    l, r = line(*geo['llateral']), line(*geo['rlateral'])
+    l, r = frame(*geo['llateral']), frame(*geo['rlateral'])
     ll, rl = l.light, r.light
 
-    diff = ll - rl 
-
-    if diff > 10:
-        if ml < LO:
-            stro = '9>'
-            mv.fwd(SPEED, .3)
-            # TODO
+    if ml < 2:
+        if ll > LO and rl < LO:
+            sto = '<-'
+            macro = lambda fr: Macros.find_line(fr, .7*SPEED, 'left')
+        elif rl > LO and ll < LO:
+            sto = '->'
+            macro = lambda fr: Macros.find_line(fr, .7*SPEED, 'right')
         else:
-            stro = '->'
-            mv.right(.7 * SPEED)
-
-    elif diff < -10:
-        if ml < LO:
-            stro = '<6'
-        else:
-            stro = '<-'
-            mv.left(.7 * SPEED)
+            sto = 'v'
+            mv.back(SPEED)
     else:
-        if ml < LO:
-            stro = '^'
-            mv.fwd(SPEED)
+        diff = ll - rl
+        if diff > 10:
+            sto = '<-.'
+            macro = lambda fr: Macros.find_line(fr, SPEED, 'left')
+        elif diff < -10:
+            sto = '.->'
+            macro = lambda fr: Macros.find_line(fr, SPEED, 'right')
         else:
-            stro = 'v'
-            # TODO
-            mv.back(speed)
+            sto = '^'
+        mv.fwd(SPEED)
+
 
     central.draw_limits(color=Color.red)
-    central.draw_label(round(ml, 2), **STYLE | {'color':Color.blue})
-    l.draw_limits(colorr=Color.blue) 
-    central.draw_label(round(ll, 2), **STYLE)
-    r.draw_limits(colorr=Color.blue) 
-    central.draw_label(round(rl, 2), **STYLE)
+    central.draw_label(round(ml, 2), **STYLE)
+    l.draw_limits(color=Color.blue) 
+    l.draw_label(round(ll, 2), **STYLE | {'color': Color.blue})
+    r.draw_limits(color=Color.blue) 
+    r.draw_label(round(rl, 2), **STYLE | {'color': Color.blue})
 
-    return sto, None
+    return sto, macro 
+
+class Macros:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def find_line(frame, speed, dir, *afterwards):
+        central = frame(*geo['wider_central'])
+
+        central.draw_limits(color=Color.red)
+        central.draw_label(round(central.light, 3), **STYLE)
+
+        # mv.stop()
+        if central.light < LO:
+            mv.__getattr__(dir)(speed)
+            return True 
+        else:
+            mv.stop()
+            for func in afterwards:
+                func()
+            return False 

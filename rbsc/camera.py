@@ -89,6 +89,14 @@ class Image:
         def hsv(self):
             return cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
 
+        @property
+        def grayscale(self):
+            return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        
+        def contrast(self, alpha, gamma):
+            src = self.frame
+            return cv2.addWeighted(src, alpha, src, 0, gamma)
+
         def save(self, path, name=None, format='.jpg'):
             if path[-1] != '/':
                 path += '/'
