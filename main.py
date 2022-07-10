@@ -30,18 +30,23 @@ follower.setup(camera.resolution)
 sleep(.5)
 print('working')
 
+scope = None
 try:
     for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port=True):
         image = img.Data(frame.array)
-        label = follower.track(image)
-
+        if scope:
+            if not scope(image):
+                scope = False
+        else:
+            label, scope = follower.track(image)
+        
         image.draw_label(label, **STYLE)
+        print(label)
 
         register.write(frame.array)
-
         raw_capture.truncate(0)
-
         sleep(.1)
+
 except KeyboardInterrupt:
     camera.close()
     follower.kill()

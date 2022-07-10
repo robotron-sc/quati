@@ -2,8 +2,8 @@ from rbsc.movement import ServoTank
 from rbsc.camera import Image as img, Color
 from time import sleep
 
-HI = 100
-LO = 80 
+HI = 95 
+LO = 50 
 HI_GREEN = 70 
 LO_GREEN = 10 
 DIFF_GREEN = 15 
@@ -18,6 +18,20 @@ STYLE = {
     'thickness':2
 }
 
+STYLEG = {
+    'color':Color.green,
+    'org':(0, 30),
+    'scale':.5,
+    'thickness':2
+}
+
+STYLEF = {
+    'color':Color.magenta,
+    'org':(0, 80),
+    'scale':.5,
+    'thickness':2
+}
+
 def setup(resolution):
     global w, h, x, y 
     w, h = resolution 
@@ -26,8 +40,9 @@ def setup(resolution):
     global geo 
     geo = {
         'central' : ((x, h - 100), (80, 80)),
-        'llateral' : ((w // 2 - 140, h - 100), (130, 80)),
-        'rlateral' : ((w // 2 + 140, h - 100), (130, 80)),
+        'wider_central' : ((x, h - 100), (115, 90)),
+        'llateral' : ((w // 2 - 140, h - 100), (130, 100)),
+        'rlateral' : ((w // 2 + 140, h - 100), (130, 100)),
         'close' : ((x, h - 50), (w, 100))
     }
 
@@ -35,65 +50,54 @@ def setup(resolution):
     mv = ServoTank(33, 31)
     kill = lambda: mv.kill()
 
-failsafe = 0
+failsafe = FAIL_CNT
 def track(image):
+    # TODO testar sem global
     global failsafe
     central = image(*geo['central'])
     li = central.light
 
     close = image(*geo['close'])
     close.draw_limits(color=Color.white)
-    # gdir, green = check_green(image)
+    gdir, green = check_green(image)
 
     r, l= image(*geo['rlateral']), image(*geo['llateral'])
     rl, ll = r.light, l.light
 
     strd = ''
+    scope = None 
     fail_add = False
+
     if li < LO:
-        if ll < LO and rl > LO:
+        if ll < LO and rl > HI:
             strd = '<-90'
-            mv.left(2*SPEED)
-        elif rl < LO and ll > LO:
+            mv.fwd(SPEED, .2)
+            after = lambda : mv.back(SPEED)
+            scope = lambda fr : Macros.findLine(fr, .9*SPEED, 'left', after)
+        elif rl < LO and ll > HI:
             strd = '90->'
-            mv.right(2*SPEED)
+            mv.fwd(SPEED, .2)
+            after = lambda : mv.back(SPEED)
+            scope = lambda fr : Macros.findLine(fr, .9*SPEED, 'right', after)
         else:
             strd = '^'
             mv.fwd(SPEED)
-    elif li < HI:
-        if ll < LO and rl > HI:
-            strd = '<-+'
-            mv.left(SPEED)
-        elif rl < LO and ll > HI:
-            strd = '+->'
-            mv.right(SPEED)
-        elif ll < LO and rl > LO:
+    # elif li < HI:
+    else:
+        if ll < LO and rl > LO:
             strd = '<-'
-            mv.left(SPEED)
+            mv.left(.8 * SPEED)
         elif rl < LO and ll > LO:
             strd = '->'
-            mv.right(SPEED)
-        elif ll < HI and rl > HI:
-            strd = '<-m'
-            mv.left(1.2*SPEED)
-        elif rl < HI and ll > HI:
-            strd = 'm->'
-            mv.right(1.2*SPEED)
+            mv.right(.8 * SPEED)
         else: 
             strd = 'v'
-            mv.back(SPEED)
-    else:
-        if ll < HI and rl > HI:
-            strd = '<-?'
-            mv.left(.8*SPEED)
-        elif rl < HI and ll > HI:
-            strd = '?->'
-            mv.right(.8*SPEED)
-        else:
-            strd = 'v'
             fail_add = True 
+            failsafe += 1
             if failsafe >= FAIL_CNT:
                 mv.back(1.2*SPEED)
+            else:
+                mv.fwd(.8*SPEED)
     if not fail_add: 
         failsafe = 0
 
@@ -103,8 +107,10 @@ def track(image):
     l.draw_label(round(ll, 2), **STYLE)
     central.draw_limits(color=Color.red)
     central.draw_label(round(li, 2), **STYLE)
+    central.draw_label(round(gdir, 2), **STYLEG)
+    central.draw_label(failsafe, **STYLEF)
 
-    return strd 
+    return strd, scope
 
 def check_green(frame:img.Data) -> tuple[int, img.Data]:
     filtered = frame.filter([60, 255, 15], [108, 255, 190])
@@ -129,23 +135,40 @@ def check_green(frame:img.Data) -> tuple[int, img.Data]:
     else:
        index = 2 
 
-    frame.draw_limits(color=Color.white)
-    filtered.draw_label(
-        green,
-        org = filtered.center,
-        color = Color.green,
-        scale = 2,
-        thickness = 2
-    )
+    # frame.draw_limits(color=Color.white)
+    # filtered.draw_label(
+    #     green,
+    #     org = filtered.center,
+    #     color = Color.green,
+    #     scale = 2,
+    #     thickness = 2
+    # )
     
     return index, filtered
 
-    class Macros:
-        def __init__(self):
-            pass
+class Macros:
+    def __init__(self):
+        pass
         
-        @staticmethod
-        def turn90deg(speed, dir):
-            mv.fwd(speed, 1)
-            mv.stop(time=1)
-            mv.left(speed*dir)
+    @staticmethod
+    def turn90deg(speed, dir):
+        mv.fwd(speed, 1)
+        mv.stop(time=1)
+        mv.left(speed*dir)
+    
+    @staticmethod
+    def findLine(frame, speed, dir, *afterwards):
+        central = frame(*geo['wider_central'])
+
+        central.draw_limits(color=Color.red)
+        central.draw_label(round(central.light, 3), **STYLE)
+
+        mv.stop()
+        if central.light > LO:
+            mv.__getattr__(dir)(speed)
+            return True 
+        else:
+            for func in afterwards:
+                func()
+            return False 
+    

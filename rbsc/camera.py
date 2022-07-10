@@ -144,6 +144,9 @@ class Color:
     blue = (255, 0, 0)
     green = (0, 255, 0)
     red = (0, 0, 255)
+    cyan = (255, 255 ,0)
+    magenta = (255, 0, 255)
+    yellow = (0, 255, 255)
 
     def __init__(self, *vals, format='bgr'):
         self.format = format

@@ -4,10 +4,10 @@ import RPi.GPIO as io
 
 class ServoTank:
     dir_strs = {
-        'back':   (-1, -1),
-        'fwd':   (1, 1),
-        'right':   (1, -1),
-        'left':   (-1, 1),
+        'back':   (-1.6, -1),
+        'fwd':   (1, 1.6),
+        'right':   (1, -1.6),
+        'left':   (-1.6, 1),
         'stop':   (0,  0)
     }
 
@@ -32,7 +32,7 @@ class ServoTank:
                 self.set(l * speed, r * speed)
                 if time:
                     sleep(time)
-                    self.brake()
+                    self.stop()
             return func
 
     def set(self, speed_l, speed_r):
