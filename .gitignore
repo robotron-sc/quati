@@ -2,4 +2,4 @@
 .vim/
 *.ipynb_checkpoints/
 *test.py
-registers/
+registers/*

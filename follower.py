@@ -2,13 +2,6 @@ from rbsc.movement import ServoTank
 from rbsc.camera import Image as img, Color
 from time import sleep
 
-HI = 95 
-LO = 50 
-HI_GREEN = 70 
-LO_GREEN = 10 
-DIFF_GREEN = 15 
-FAIL_CNT = 5 
-
 SPEED = .5
 
 STYLE = {
@@ -40,7 +33,7 @@ def setup(resolution):
     global geo 
     geo = {
         'central' : ((x, h - 100), (80, 80)),
-        'wider_central' : ((x, h - 100), (115, 90)),
+        'wider_central' : ((x, h - 100), (90, 110)),
         'llateral' : ((w // 2 - 140, h - 100), (130, 100)),
         'rlateral' : ((w // 2 + 140, h - 100), (130, 100)),
         'close' : ((x, h - 50), (w, 100))
@@ -68,28 +61,29 @@ def track(image):
     scope = None 
     fail_add = False
 
+    diff = ll - rl
+
     if li < LO:
         if ll < LO and rl > HI:
             strd = '<-90'
-            mv.fwd(SPEED, .2)
+            mv.fwd(SPEED, .3)
             after = lambda : mv.back(SPEED)
             scope = lambda fr : Macros.findLine(fr, .9*SPEED, 'left', after)
         elif rl < LO and ll > HI:
             strd = '90->'
-            mv.fwd(SPEED, .2)
+            mv.fwd(SPEED, .3)
             after = lambda : mv.back(SPEED)
             scope = lambda fr : Macros.findLine(fr, .9*SPEED, 'right', after)
         else:
             strd = '^'
             mv.fwd(SPEED)
-    # elif li < HI:
     else:
-        if ll < LO and rl > LO:
+        if diff < -DIFF: 
             strd = '<-'
-            mv.left(.8 * SPEED)
-        elif rl < LO and ll > LO:
+            mv.left(.7 * SPEED)
+        elif diff > DIFF:
             strd = '->'
-            mv.right(.8 * SPEED)
+            mv.right(.7 * SPEED)
         else: 
             strd = 'v'
             fail_add = True 
@@ -164,7 +158,7 @@ class Macros:
         central.draw_label(round(central.light, 3), **STYLE)
 
         mv.stop()
-        if central.light > LO:
+        if central.light > HI:
             mv.__getattr__(dir)(speed)
             return True 
         else:
