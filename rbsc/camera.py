@@ -132,6 +132,8 @@ class Image:
             if 'scale' in style:
                 style['fontScale'] = style['scale'] 
                 del style['scale']
+            else:
+                style['fontScale'] = 1
             if not isinstance(label, str) :
                 label = str(label)
 
