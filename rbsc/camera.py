@@ -62,7 +62,7 @@ class Image:
         def light(self, cvt=cv2.COLOR_BGR2GRAY):
             return np.average(cv2.cvtColor(self.frame, cvt)) 
 
-        def filter(self, *range, colors=([0]*3, [255]*3)):
+        def filter(self, *range, colors=([0]*3, [255]*3), bitwise=False):
             if len(range) != 2:
                 raise Exception(f'Range must be 2 tuples')
 
@@ -70,6 +70,8 @@ class Image:
             lo, hi = (np.array(color) for color in range)
 
             mask = cv2.inRange(hsv, lo, hi)
+            if bitwise:
+                return mask
             w, h = self.shape
 
             filtered = np.empty((h, w, 3), 'uint8')
