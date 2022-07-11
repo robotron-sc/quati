@@ -7,12 +7,6 @@ from follower import Follower
 from rbsc.camera import Image as img, Color
  
 stream = Flask(__name__)
-STYLE = {
-    'color':Color.red,
-    'org':(320, 240),
-    'scale': 1,
-    'thickness': 2
-}
 
 def generator():
     camera = PiCamera(resolution=(640, 480), framerate=60)
@@ -27,13 +21,16 @@ def generator():
 
     for frame in camera.capture_continuous(raw, **capture_config): 
         frdata = img.Data(frame.array)
-        contrast = img.Data(frdata.contrast(.9, 0))
-        frdata = contrast.filter([0]*3, [255, 255, 60])
+        crop = frdata(frdata.center, (25, 25))
 
-        track = follower.track(frdata)
-        frdata.draw_label(track, org = frdata.center, thickness=2, color=Color.green)
+        crop.draw_limits(color=Color.magenta)
+        color = img.Data(crop.resize((1,1)))
+        hsv = color.hsv
+        demo = color.resize((640, 420))
+        print(hsv)
 
-        byteframe = bytes(frdata)
+        board = img.Data(img.vboard(frdata.frame, demo))
+        byteframe = bytes(board)
         yield (b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n' + byteframe + b'\r\n\r\n')
         raw.truncate(0)

@@ -95,6 +95,9 @@ class Image:
         def grayscale(self):
             return cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         
+        def blur(self, matrix=(3,3)):
+            return cv2.GaussianBlur(self.frame, matrix, 0)
+
         def contrast(self, alpha, gamma):
             src = self.frame
             return cv2.addWeighted(src, alpha, src, 0, gamma)
@@ -114,8 +117,7 @@ class Image:
             return self.frame[y:y+h, x:x+w]
 
         def dominant_colors(self, cnt):
-            shape = Image.shape(self.frame)
-            data = np.reshape(self.frame, (np.prod(shape), 3))
+            data = np.reshape(self.frame, (np.prod(self.shape), 3))
             data = np.float32(data)
 
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
@@ -144,7 +146,7 @@ class Image:
             end = self.shape - (1, 1)
             cv2.rectangle(self.frame, start, end, **style)
             cv2.circle(self.frame, end//2, radius=1, **style)
-
+        
     @staticmethod
     def vboard(*imgs):
         concat = cv2.vconcat([imgs[0], imgs[1]])
